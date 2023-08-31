@@ -23,6 +23,8 @@ SET _MARKETOPT = "ANY";
 -- Set to: 0 to ignore, -1 for signed-out, or >0 for signed-in.
 SET _USERID = 0;
 
+--CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.multi_searchexplain_sample` AS
+
 WITH multiple_requests AS (
   SELECT request.query, OrganicRequestMetadata.candidateSources, RequestIdentifiers
   FROM `etsy-searchinfra-gke-prod-2.thrift_mmx_listingsv2search_search.rpc_logs_*`
