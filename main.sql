@@ -6,7 +6,7 @@ DECLARE _RANKING STRING;
 DECLARE _MARKETOPT STRING;
 DECLARE _USERID INT64;
 
-SET _DATE = "2023-08-29";
+SET _DATE = CURRENT_DATE() - 1;
 SET _PLACEMENT = "wsg"; -- See https://docs.etsycorp.com/searchx-docs/docs/search_placements/#search-placement-registry
 
 -- Find current MMX Behaviors here: https://atlas.etsycorp.com/search-experiment-queue
@@ -24,7 +24,7 @@ CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.top_queries_sample_las
 WITH cte AS (
 SELECT query_raw, COUNT(DISTINCT visit_id) AS visits_that_used_query
 FROM `etsy-data-warehouse-prod.search.query_sessions_all`
-WHERE _date >= CURRENT_DATE() - 90
+WHERE _date >= CURRENT_DATE() - 1
 GROUP BY 1
 )
 SELECT
@@ -47,11 +47,11 @@ CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.multi_searchexplain_sa
 WITH multiple_requests AS (
   SELECT request.query, OrganicRequestMetadata.candidateSources, RequestIdentifiers
   FROM `etsy-searchinfra-gke-prod-2.thrift_mmx_listingsv2search_search.rpc_logs_*`
-  WHERE DATE(queryTime) >= CURRENT_DATE() - 90
+  WHERE DATE(queryTime) >= _DATE
     AND request.options.searchPlacement = _PLACEMENT
     AND request.query IN (SELECT query_raw
                           FROM `etsy-data-warehouse-dev.ecanales.top_queries_sample_last_90_days`
-                          WHERE rank <= 10)
+                          WHERE rank <= 11)
     AND (request.options.mmxBehavior.matching = _MATCHING OR _MATCHING = "ANY")
     AND (request.options.mmxBehavior.ranking = _RANKING OR _RANKING = "ANY")
     AND (request.options.mmxBehavior.marketOptimization = _MARKETOPT OR _MARKETOPT = "ANY")
@@ -114,7 +114,7 @@ ORDER BY
   solr    NULLS LAST,
   nir     NULLS LAST,
   xwalk   NULLS LAST,
-  xml     NULLS LAST
+  xml     NULLS LAST;
 
 
 --STEP 3: Calculate metrics from table
