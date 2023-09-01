@@ -1,6 +1,8 @@
--- Given a single search request, for earch listing, returns the rank at each stage of the request.
+-- THIS QUERY IS AN ATTEMPT TO USE rstewarts's SEARCH EXPLAIN LOGIC TO POPULATE A TABLE WITH A SAMPLE OF
+-- THE MOST POPULAR SEARCH QUERIES, IT THEN CALCULATES BASED ON THE OUTPUT THE "P0" METRICS
+-- DESCRIBED ON THIS DOC: https://docs.google.com/spreadsheets/d/1w1kwcYAiIVqY6v5gnzu63BKPj_AT2qmtbppjBaJeAaA/edit#gid=0
 
--- See this spreadsheet for more user-friendly version:
+-- See this spreadsheet for rstewart's search explain, user-friendly version:
 -- https://docs.google.com/spreadsheets/d/1ZjMfUjEJ1xnXa3ItrQOMnbLR_En4jrS44aaY7v1-jno
 
 DECLARE _DATE DATE;
@@ -12,9 +14,9 @@ DECLARE _MARKETOPT STRING;
 DECLARE _USERID INT64;
 DECLARE _SAMPLE INT64;
 
-SET _DATE = CURRENT_DATE() - 1;
+SET _DATE = CURRENT_DATE() - 1; -- Set date range
 SET _PLACEMENT = "wsg"; -- See https://docs.etsycorp.com/searchx-docs/docs/search_placements/#search-placement-registry
-SET _SAMPLE = 200; --Set sample size
+SET _SAMPLE = 100; --Set sample size
 
 -- Find current MMX Behaviors here: https://atlas.etsycorp.com/search-experiment-queue
 -- Set to "ANY" to ignore.
@@ -25,7 +27,7 @@ SET _MARKETOPT = "ANY";
 -- Set to: 0 to ignore, -1 for signed-out, or >0 for signed-in.
 SET _USERID = 0;
 
-
+--Creates a sample table of the most common queries in the past 7 days
 CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.top_queries_sample` AS
 WITH cte AS (
 SELECT query_raw, COUNT(DISTINCT visit_id) AS visits_that_used_query
@@ -44,9 +46,10 @@ ORDER BY visits_that_used_query DESC;
 CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.multi_searchexplain_sample` AS
 
 WITH query_list AS (
-  SELECT query FROM `etsy-data-warehouse-dev.ecanales.top_queries_sample` WHERE rank <= 20
+  SELECT query FROM `etsy-data-warehouse-dev.ecanales.top_queries_sample` WHERE rank <= _SAMPLE
   -- Add more queries here
 ),
+
 -- Original single_request CTE, but now it will work with multiple queries
 single_request AS (
   SELECT 
@@ -69,7 +72,7 @@ single_request AS (
     AND request.options.queryType = "ponycorn_seller_quality"
     AND request.options.cacheBucketId = "live|web"
     AND request.options.csrOrganic = TRUE
-    LIMIT 1000
+    LIMIT 10000
 ),
 metadata AS (
   SELECT
