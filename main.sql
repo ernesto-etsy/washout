@@ -1,3 +1,24 @@
+DECLARE _DATE DATE;
+DECLARE _PLACEMENT STRING;
+DECLARE _QUERIES ARRAY<STRING>;
+DECLARE _MATCHING STRING;
+DECLARE _RANKING STRING;
+DECLARE _MARKETOPT STRING;
+DECLARE _USERID INT64;
+
+SET _DATE = "2023-08-29";
+SET _PLACEMENT = "wsg"; -- See https://docs.etsycorp.com/searchx-docs/docs/search_placements/#search-placement-registry
+
+-- Find current MMX Behaviors here: https://atlas.etsycorp.com/search-experiment-queue
+-- Set to "ANY" to ignore.
+SET _MATCHING = "ANY";
+SET _RANKING = "ANY";
+SET _MARKETOPT = "ANY";
+
+-- Set to: 0 to ignore, -1 for signed-out, or >0 for signed-in.
+SET _USERID = 0;
+
+
 --STEP 1: Create table of sample queries for Search Explain
 CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.top_queries_sample_last_90_days` AS
 WITH cte AS (
@@ -20,26 +41,6 @@ ORDER BY visits_that_used_query DESC;
 
 -- See this spreadsheet for more user-friendly version:
 -- https://docs.google.com/spreadsheets/d/1ZjMfUjEJ1xnXa3ItrQOMnbLR_En4jrS44aaY7v1-jno
-
-DECLARE _DATE DATE;
-DECLARE _PLACEMENT STRING;
-DECLARE _QUERIES ARRAY<STRING>;
-DECLARE _MATCHING STRING;
-DECLARE _RANKING STRING;
-DECLARE _MARKETOPT STRING;
-DECLARE _USERID INT64;
-
-SET _DATE = "2023-08-29";
-SET _PLACEMENT = "wsg"; -- See https://docs.etsycorp.com/searchx-docs/docs/search_placements/#search-placement-registry
-
--- Find current MMX Behaviors here: https://atlas.etsycorp.com/search-experiment-queue
--- Set to "ANY" to ignore.
-SET _MATCHING = "ANY";
-SET _RANKING = "ANY";
-SET _MARKETOPT = "ANY";
-
--- Set to: 0 to ignore, -1 for signed-out, or >0 for signed-in.
-SET _USERID = 0;
 
 CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.multi_searchexplain_sample` AS
 
