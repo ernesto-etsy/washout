@@ -1,3 +1,4 @@
+-- This script is a starting block for joining uuids from search explain output back to visit_ids
 with events as (
   select
     visit_id,
@@ -12,4 +13,3 @@ and DATE(_PARTITIONTIME) >=  "2023-08-29"
 SELECT DISTINCT se.uuid, visit_id
 FROM `etsy-data-warehouse-dev.ecanales.multi_searchexplain_sample` se
   JOIN events e on e.request_uuid = se.uuid
-;
