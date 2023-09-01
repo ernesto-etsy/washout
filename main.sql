@@ -120,7 +120,7 @@ ORDER BY
   solr    NULLS LAST,
   nir     NULLS LAST,
   xwalk   NULLS LAST,
-  xml     NULLS LAST
+  xml     NULLS LAST;
 
 
 --STEP 3: Calculate metrics from table
