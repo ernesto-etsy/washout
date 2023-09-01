@@ -1,3 +1,8 @@
+-- Given a single search request, for earch listing, returns the rank at each stage of the request.
+
+-- See this spreadsheet for more user-friendly version:
+-- https://docs.google.com/spreadsheets/d/1ZjMfUjEJ1xnXa3ItrQOMnbLR_En4jrS44aaY7v1-jno
+
 DECLARE _DATE DATE;
 DECLARE _PLACEMENT STRING;
 DECLARE _QUERIES ARRAY<STRING>;
@@ -5,9 +10,11 @@ DECLARE _MATCHING STRING;
 DECLARE _RANKING STRING;
 DECLARE _MARKETOPT STRING;
 DECLARE _USERID INT64;
+DECLARE _SAMPLE INT64;
 
 SET _DATE = CURRENT_DATE() - 1;
 SET _PLACEMENT = "wsg"; -- See https://docs.etsycorp.com/searchx-docs/docs/search_placements/#search-placement-registry
+SET _SAMPLE = 200; --Set sample size
 
 -- Find current MMX Behaviors here: https://atlas.etsycorp.com/search-experiment-queue
 -- Set to "ANY" to ignore.
@@ -19,39 +26,38 @@ SET _MARKETOPT = "ANY";
 SET _USERID = 0;
 
 
---STEP 1: Create table of sample queries for Search Explain
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.top_queries_sample_last_90_days` AS
+CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.top_queries_sample` AS
 WITH cte AS (
 SELECT query_raw, COUNT(DISTINCT visit_id) AS visits_that_used_query
 FROM `etsy-data-warehouse-prod.search.query_sessions_all`
-WHERE _date >= CURRENT_DATE() - 1
+WHERE _date >= CURRENT_DATE() - 7
 GROUP BY 1
 )
 SELECT
-query_raw,
+query_raw AS query,
 visits_that_used_query,
-visits_that_used_query / (SELECT COUNT(DISTINCT visit_id) FROM `etsy-data-warehouse-prod.search.query_sessions_all`WHERE _date >= CURRENT_DATE() - 90) AS pct_of_visits_covered,
+visits_that_used_query / (SELECT COUNT(DISTINCT visit_id) FROM `etsy-data-warehouse-prod.search.query_sessions_all`WHERE _date >= CURRENT_DATE() - 7) AS pct_of_visits_covered,
 RANK() OVER (ORDER BY visits_that_used_query DESC) AS rank
 FROM cte
 ORDER BY visits_that_used_query DESC;
 
---STEP 2: Pull Search Explain data for each query
-
--- Given a single search request, for earch listing, returns the rank at each stage of the request.
-
--- See this spreadsheet for more user-friendly version:
--- https://docs.google.com/spreadsheets/d/1ZjMfUjEJ1xnXa3ItrQOMnbLR_En4jrS44aaY7v1-jno
-
 CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.multi_searchexplain_sample` AS
 
-WITH multiple_requests AS (
-  SELECT request.query, OrganicRequestMetadata.candidateSources, RequestIdentifiers
-  FROM `etsy-searchinfra-gke-prod-2.thrift_mmx_listingsv2search_search.rpc_logs_*`
-  WHERE DATE(queryTime) >= _DATE
-    AND request.options.searchPlacement = _PLACEMENT
-    AND request.query IN (SELECT query_raw
-                          FROM `etsy-data-warehouse-dev.ecanales.top_queries_sample_last_90_days`
-                          WHERE rank <= 11)
+WITH query_list AS (
+  SELECT query FROM `etsy-data-warehouse-dev.ecanales.top_queries_sample` WHERE rank <= 20
+  -- Add more queries here
+),
+-- Original single_request CTE, but now it will work with multiple queries
+single_request AS (
+  SELECT 
+    Q.query, 
+    R.OrganicRequestMetadata.candidateSources, 
+    R.RequestIdentifiers
+  FROM query_list Q
+  CROSS JOIN `etsy-searchinfra-gke-prod-2.thrift_mmx_listingsv2search_search.rpc_logs_*` R
+  WHERE DATE(R.queryTime) >= _DATE
+    AND R.request.options.searchPlacement = _PLACEMENT
+    AND R.request.query = Q.query
     AND (request.options.mmxBehavior.matching = _MATCHING OR _MATCHING = "ANY")
     AND (request.options.mmxBehavior.ranking = _RANKING OR _RANKING = "ANY")
     AND (request.options.mmxBehavior.marketOptimization = _MARKETOPT OR _MARKETOPT = "ANY")
@@ -63,7 +69,7 @@ WITH multiple_requests AS (
     AND request.options.queryType = "ponycorn_seller_quality"
     AND request.options.cacheBucketId = "live|web"
     AND request.options.csrOrganic = TRUE
-    LIMIT 10
+    LIMIT 1000
 ),
 metadata AS (
   SELECT
@@ -72,7 +78,7 @@ metadata AS (
     C.stage,
     C.source,
     C.listingIds  
-  FROM multiple_requests
+  FROM single_request
   CROSS JOIN UNNEST(candidateSources) AS C
   WHERE C.interleavedBehavior IS NULL
 ),
@@ -114,7 +120,7 @@ ORDER BY
   solr    NULLS LAST,
   nir     NULLS LAST,
   xwalk   NULLS LAST,
-  xml     NULLS LAST;
+  xml     NULLS LAST
 
 
 --STEP 3: Calculate metrics from table
