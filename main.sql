@@ -7,7 +7,7 @@
 
 
 -------------PART 1: GATHER A SAMPLE OF UUIDS FROM AN EXPERIMENT-------------
-DECLARE d DATE;
+DECLARE _date DATE;
 DECLARE config STRING;
 
 
