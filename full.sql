@@ -205,4 +205,4 @@ AVG(CASE WHEN mo_last <= 1000 THEN ranking ELSE NULL END) AS ranking_avg_top_1k_
 AVG(CASE WHEN mo_last <= 1000 THEN mo_last ELSE NULL END) AS mo_avg_top_1k_rank
 FROM base
 group by 1,2
-order by 1,2;
+order by 2,1;
