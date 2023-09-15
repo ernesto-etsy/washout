@@ -138,8 +138,8 @@ with base as (
     else 0 end as top_3_flag
   from
     `etsy-data-warehouse-dev.ecanales.nirt_1m_multi_searchexplain_sample` a join
-    `etsy-data-warehouse-prod.catapult.ab_tests` b on a.visit_id = b.visit_id and b.ab_test = 'ranking/search.mmx.2023_q3.nir_t_hqi_web' and b._date = "2023-09-01" join
-    `etsy-data-warehouse-prod.weblog.recent_visits` c on b.visit_id = c.visit_id and c._date = "2023-09-01"
+    `etsy-data-warehouse-prod.catapult.ab_tests` b on a.visit_id = b.visit_id and b.ab_test = 'ranking/search.mmx.2023_q3.nir_t_hqi_web' and b._date IN UNNEST(_dates) join
+    `etsy-data-warehouse-prod.weblog.recent_visits` c on b.visit_id = c.visit_id and c._date IN UNNEST(_dates)
 )
 SELECT
 ab_variant,
