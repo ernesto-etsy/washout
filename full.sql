@@ -120,89 +120,123 @@ ORDER BY
   xwalk   NULLS LAST,
   xml     NULLS LAST;
 -------------PART 4: CALCULATE KEY RETRIEVAL WASHOUT METRICS FROM SAMPLE-------------
---overall stats (first page)
-with base as (
-  select
-    a.*,
-    b.ab_variant,
-    c.platform,
-    case 
-      when c.platform = "desktop" and mo_last <= 48 then 1
-      when c.platform = "mobile_web" and mo_last <= 34 then 1
-      when c.platform = "boe" and mo_last <= 28 then 1
-    else 0 end as page_1_flag,
-     case 
-      when c.platform = "desktop" and mo_last <= 48*3 then 1
-      when c.platform = "mobile_web" and mo_last <= 34*3 then 1
-      when c.platform = "boe" and mo_last <= 28*3 then 1
-    else 0 end as top_3_flag
-  from
-    `etsy-data-warehouse-dev.ecanales.nirt_1m_multi_searchexplain_sample` a join
-    `etsy-data-warehouse-prod.catapult.ab_tests` b on a.visit_id = b.visit_id and b.ab_test = config and b._date IN UNNEST(_dates) join
-    `etsy-data-warehouse-prod.weblog.recent_visits` c on b.visit_id = c.visit_id and c._date IN UNNEST(_dates)
-)
+-- Create temporary table
+CREATE TEMP TABLE temp_base AS
+SELECT
+  a.*,
+  b.ab_variant,
+  c.platform,
+  CASE 
+    WHEN c.platform = "desktop" AND mo_last <= 48 THEN 1
+    WHEN c.platform = "mobile_web" AND mo_last <= 34 THEN 1
+    WHEN c.platform = "boe" AND mo_last <= 28 THEN 1
+  ELSE 0 END AS page_1_flag,
+  CASE 
+    WHEN c.platform = "desktop" AND mo_last <= 48*3 THEN 1
+    WHEN c.platform = "mobile_web" AND mo_last <= 34*3 THEN 1
+    WHEN c.platform = "boe" AND mo_last <= 28*3 THEN 1
+  ELSE 0 END AS top_3_flag
+FROM
+  `etsy-data-warehouse-dev.ecanales.vi_fbv2_multi_searchexplain_sample` a
+JOIN
+  `etsy-data-warehouse-prod.catapult.ab_tests` b
+ON a.visit_id = b.visit_id AND b.ab_test = config AND b._date IN UNNEST(_dates)
+JOIN
+  `etsy-data-warehouse-prod.weblog.recent_visits` c
+ON b.visit_id = c.visit_id AND c._date IN UNNEST(_dates);
+--KEY METRIC: FIRST PAGE SHARE OVERALL
+SELECT
+ab_variant,
+count(distinct visit_id) as visit_count,
+count(distinct request_uuid) as request_count,
+count(*) as listing_count,
+--Solr (only)
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NULL AND xwalk IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_only_first_page_share,
+--Solr <> NIR (no XWalk)
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_nir_first_page_share,
+--Solr <> XWalk (no NIR)
+SUM(CASE WHEN (solr IS NOT NULL AND xwalk IS NOT NULL AND nir IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_xwalk_first_page_share,
+--NIR (only)
+SUM(CASE WHEN (nir IS NOT NULL AND solr IS NULL AND xwalk IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS nir_only_first_page_share,
+--NIR <> XWalk (no Solr)
+SUM(CASE WHEN (nir IS NOT NULL AND xwalk IS NOT NULL AND solr IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS nir_xwalk_first_page_share,
+--XWalk (only)
+SUM(CASE WHEN (xwalk IS NOT NULL AND solr IS NULL AND nir IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS xwalk_only_first_page_share,
+--Solr <> NIR <> XWalk
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS all_algos_first_page_share,
+FROM temp_base
+GROUP BY 1
+ORDER BY 1;
+
+--KEY METRIC: FIRST TO THIRD PAGES SHARE OVERALL
+SELECT
+ab_variant,
+count(distinct visit_id) as visit_count,
+count(distinct request_uuid) as request_count,
+count(*) as listing_count,
+--Solr (only)
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NULL AND xwalk IS NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS solr_only_3p_share,
+--Solr <> NIR (no XWalk)
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS solr_nir_3p_share,
+--Solr <> XWalk (no NIR)
+SUM(CASE WHEN (solr IS NOT NULL AND xwalk IS NOT NULL AND nir IS NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS solr_xwalk_3p_share,
+--NIR (only)
+SUM(CASE WHEN (nir IS NOT NULL AND solr IS NULL AND xwalk IS NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS nir_only_3p_share,
+--NIR <> XWalk (no Solr)
+SUM(CASE WHEN (nir IS NOT NULL AND xwalk IS NOT NULL AND solr IS NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS nir_xwalk_3p_share,
+--XWalk (only)
+SUM(CASE WHEN (xwalk IS NOT NULL AND solr IS NULL AND nir IS NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS xwalk_only_3p_share,
+--Solr <> NIR <> XWalk
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS all_algos_3p_share,
+FROM temp_base
+GROUP BY 1
+ORDER BY 1;
+
+--KEY METRIC: 1000 CANDIDATES SHARE OVERALL
+SELECT
+ab_variant,
+count(distinct visit_id) as visit_count,
+count(distinct request_uuid) as request_count,
+count(*) as listing_count,
+--Solr (only)
+SUM(CASE WHEN (solr IS NOT NULL AND xwalk IS NULL AND nir IS NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS solr_only_1k_share,
+--Solr <> NIR (no XWalk)
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS solr_nir_1k_share,
+--Solr <> XWalk (no NIR)
+SUM(CASE WHEN (solr IS NOT NULL AND xwalk IS NOT NULL AND nir IS NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS solr_xwalk_1k_share,
+--NIR (only)
+SUM(CASE WHEN (nir IS NOT NULL AND xwalk IS NULL AND solr IS NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS nir_only_1k_share,
+--NIR <> XWalk (no Solr)
+SUM(CASE WHEN (nir IS NOT NULL AND xwalk IS NOT NULL AND solr IS NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS nir_xwalk_1k_share,
+--XWalk (only)
+SUM(CASE WHEN (xwalk IS NOT NULL AND solr IS NULL AND nir IS NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS xwalk_only_1k_share,
+--Solr <> NIR <> XWalk
+SUM(CASE WHEN (xwalk IS NOT NULL AND solr IS NOT NULL AND nir IS NOT NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS all_algos_1k_share,
+FROM temp_base
+GROUP BY 1
+ORDER BY 1;
+
+--KEY METRIC: FIRST PAGE SHARE BY SAMPLE DATE
 SELECT
 ab_variant,
 _date,
 count(distinct visit_id) as visit_count,
 count(distinct request_uuid) as request_count,
 count(*) as listing_count,
--- first page share
-SUM(CASE WHEN (solr IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_first_page_share,
-SUM(CASE WHEN (nir IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS nir_first_page_share,
+--Solr (only)
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NULL AND xwalk IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_only_first_page_share,
+--Solr <> NIR (no XWalk)
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_nir_first_page_share,
+--Solr <> XWalk (no NIR)
+SUM(CASE WHEN (solr IS NOT NULL AND xwalk IS NOT NULL AND nir IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_xwalk_first_page_share,
+--NIR (only)
 SUM(CASE WHEN (nir IS NOT NULL AND solr IS NULL AND xwalk IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS nir_only_first_page_share,
-SUM(CASE WHEN (xwalk IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS xwalk_first_page_share,
-SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_nir_first_page_share,
-SUM(CASE WHEN (solr IS NOT NULL AND xwalk IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS xwalk_nir_first_page_share,
+--NIR <> XWalk (no Solr)
+SUM(CASE WHEN (nir IS NOT NULL AND xwalk IS NOT NULL AND solr IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS nir_xwalk_first_page_share,
+--XWalk (only)
+SUM(CASE WHEN (xwalk IS NOT NULL AND solr IS NULL AND nir IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS xwalk_only_first_page_share,
+--Solr <> NIR <> XWalk
 SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS all_algos_first_page_share,
--- first page rank
-AVG(CASE WHEN solr is not null and page_1_flag = 1 then solr end) as avg_solr_pg_1_rank,
-AVG(CASE WHEN nir is not null and page_1_flag = 1 then nir end) as avg_nir_pg_1_rank,
-AVG(case when xwalk is not null and page_1_flag = 1 then xwalk end) as avg_xwalk_pg_1_rank,
-AVG(CASE WHEN solr IS NOT NULL AND nir IS NOT NULL AND page_1_flag = 1 THEN nir END) as avg_solr_nir_pg_1_rank,
-AVG(CASE WHEN nir IS NOT NULL AND xwalk IS NOT NULL AND page_1_flag = 1 THEN xwalk END) as avg_nir_xwalk_pg_1_rank,
-AVG(CASE WHEN solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND page_1_flag = 1 THEN xwalk END) as avg_all_algos_pg_1_rank,
-AVG(CASE WHEN page_1_flag = 1 THEN borda ELSE NULL END) AS borda_avg_first_page_rank,
-AVG(CASE WHEN page_1_flag = 1 THEN ranking ELSE NULL END) AS ranking_avg_first_page_rank,
-AVG(CASE WHEN page_1_flag = 1 THEN mo_last ELSE NULL END) AS mo_avg_first_page_rank,
--- top 3 share
-SUM(CASE WHEN (solr IS NOT NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS solr_top_3p_share,
-SUM(CASE WHEN (nir IS NOT NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS nir_top_3p_share,
-SUM(CASE WHEN (xwalk IS NOT NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS xwalk_top_3p_share,
-SUM(CASE WHEN (nir IS NOT NULL AND solr IS NULL AND xwalk IS NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS nir_only_3p_share,
-SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS solr_nir_top_3p_share,
-SUM(CASE WHEN (solr IS NOT NULL AND xwalk IS NOT NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS xwalk_nir_top_3p_share,
-SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS all_algos_top_3p_share,
---top 3 rank
-AVG(CASE WHEN solr IS NOT NULL AND top_3_flag = 1 THEN solr END) as avg_solr_pg_3_rank,
-AVG(CASE WHEN nir IS NOT NULL AND top_3_flag = 1 THEN nir END) as avg_nir_pg_3_rank,
-AVG(CASE WHEN xwalk IS NOT NULL AND top_3_flag = 1 THEN xwalk END) as avg_xwalk_pg_3_rank,
-AVG(CASE WHEN solr IS NOT NULL AND nir IS NOT NULL AND top_3_flag = 1 THEN nir END) as avg_solr_nir_pg_3_rank,
-AVG(CASE WHEN nir IS NOT NULL AND xwalk IS NOT NULL AND top_3_flag = 1 THEN xwalk END) as avg_nir_xwalk_pg_3_rank,
-AVG(CASE WHEN solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND top_3_flag = 1 THEN xwalk END) as avg_all_algos_pg_3_rank,
-AVG(CASE WHEN top_3_flag = 1 THEN borda ELSE NULL END) AS borda_avg_top_3p_rank,
-AVG(CASE WHEN top_3_flag = 1 THEN ranking ELSE NULL END) AS ranking_avg_top_3p_rank,
-AVG(CASE WHEN top_3_flag = 1 THEN mo_last ELSE NULL END) AS mo_avg_top_3p_rank,
--- top 1000 share
-SUM(CASE WHEN (solr IS NOT NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS solr_top_1k_share,
-SUM(CASE WHEN (nir IS NOT NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS nir_top_1k_share,
-SUM(CASE WHEN (xwalk IS NOT NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS xwalk_top_1k_share,
-SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS solr_nir_top_1k_share,
-SUM(CASE WHEN (solr IS NOT NULL AND xwalk IS NOT NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS xwalk_nir_top_1k_share,
-SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS xwalk_top_1k_share,
-SUM(CASE WHEN (nir IS NOT NULL AND solr IS NULL AND xwalk IS NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS nir_only_1k_share,
-
-
--- top 1000 rank
-avg(case when solr is not null and mo_last <= 1000 then solr end) as avg_solr_top_1k_rank,
-avg(case when nir is not null and mo_last <= 1000 then nir end) as avg_nir_top_1k_rank,
-avg(case when xwalk is not null and mo_last <= 1000 then xwalk end) as avg_xwalk_top_1k_rank,
-avg(CASE WHEN solr IS NOT NULL AND nir IS NOT NULL AND mo_last <= 1000 then nir end) as avg_solr_nir_top_1k_rank,
-avg(CASE WHEN nir IS NOT NULL AND xwalk IS NOT NULL AND mo_last <= 1000 then xwalk end) as avg_nir_xwalk_top_1k_rank,
-avg(CASE WHEN solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND mo_last <= 1000 then xwalk end) as avg_all_algos_top_1k_rank,
-AVG(CASE WHEN mo_last <= 1000 THEN borda ELSE NULL END) AS borda_avg_top_1k_rank,
-AVG(CASE WHEN mo_last <= 1000 THEN ranking ELSE NULL END) AS ranking_avg_top_1k_rank,
-AVG(CASE WHEN mo_last <= 1000 THEN mo_last ELSE NULL END) AS mo_avg_top_1k_rank
-FROM base
-group by 1,2
-order by 2,1;
+FROM temp_base
+GROUP BY 1,2
+ORDER BY 2,1;
