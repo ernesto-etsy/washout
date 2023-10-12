@@ -23,7 +23,7 @@ GROUP BY
   request_uuid, ab_flag, ab_flag_variant
 ORDER BY
   RAND()
-LIMIT 1000000;
+LIMIT 3000000;
 
 -------------PART 2: PULL ALL ASSOCIATED VISIT IDS AND SEARCH QUERIES FROM EXPERIMENT SAMPLE-------------
 
