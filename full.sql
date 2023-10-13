@@ -1,8 +1,11 @@
 DECLARE _dates ARRAY<DATE>;
 DECLARE config STRING;
+DECLARE _platform STRING;
 
 SET config = 'ranking/search.mmx.2023_q3.axwalk_faisspp_boe';
-SET _dates = [DATE('2023-10-07'), DATE('2023-10-09'), DATE('2023-10-11')]; 
+SET _dates = [DATE('2023-10-07'), DATE('2023-10-09'), DATE('2023-10-11')];
+-- 'wsg' if WEB experiment, 'allsr' if BOE experiment
+SET platform = "wsg"
 
 CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.faiss_xwalk_experiment_uuids_sample` AS
 
@@ -59,7 +62,7 @@ SELECT
   FROM `etsy-data-warehouse-dev.ecanales.faiss_xwalk_experiment_uuids_sample_searches` Q
   CROSS JOIN `etsy-searchinfra-gke-prod-2.thrift_mmx_listingsv2search_search.rpc_logs_*` R
   WHERE DATE(R.queryTime) = Q._date
-    AND R.request.options.searchPlacement = "wsg"
+    AND R.request.options.searchPlacement = _platform
     AND RequestIdentifiers.etsyRequestUUID = Q.request_uuid
     AND request.sortBy = 'relevance'
     AND request.sortOrder = 'desc'
