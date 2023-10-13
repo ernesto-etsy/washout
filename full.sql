@@ -1,10 +1,10 @@
 DECLARE _dates ARRAY<DATE>;
 DECLARE config STRING;
 
-SET config = 'ranking/search.mmx.2023_q3.nir_t_hqi_web';
-SET _dates = [DATE('2023-08-29'), DATE('2023-09-02'), DATE('2023-09-05')]; 
+SET config = 'ranking/search.mmx.2023_q3.axwalk_faisspp_boe';
+SET _dates = [DATE('2023-10-07'), DATE('2023-10-09'), DATE('2023-10-11')]; 
 
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.nirt_1m_experiment_uuids_sample` AS
+CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.faiss_xwalk_experiment_uuids_sample` AS
 
 SELECT
   properties.value AS request_uuid,
@@ -27,7 +27,7 @@ LIMIT 3000000;
 
 -------------PART 2: PULL ALL ASSOCIATED VISIT IDS AND SEARCH QUERIES FROM EXPERIMENT SAMPLE-------------
 
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.nirt_1m_experiment_uuids_sample_searches` AS
+CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.faiss_xwalk_experiment_uuids_sample_searches` AS
 
 with events as (
   select
@@ -44,19 +44,19 @@ where beacon.event_name = 'search'
 and DATE(_PARTITIONTIME) IN UNNEST(_dates)
 )
 SELECT e._date,s.request_uuid,s.ab_flag,e.visit_id,e.query
-FROM `etsy-data-warehouse-dev.ecanales.nirt_1m_experiment_uuids_sample` s
+FROM `etsy-data-warehouse-dev.ecanales.faiss_xwalk_experiment_uuids_sample` s
   JOIN events e on e.request_uuid = s.request_uuid
 WHERE e.query IS NOT NULL;
 
 -------------PART 3: PULL FROM RPC LOGS-------------
 
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.nirt_1m_multi_searchexplain_sample` AS
+CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.faiss_xwalk_multi_searchexplain_sample` AS
 WITH requests AS (
 SELECT 
     Q.*,
     R.OrganicRequestMetadata.candidateSources, 
     R.RequestIdentifiers
-  FROM `etsy-data-warehouse-dev.ecanales.nirt_1m_experiment_uuids_sample_searches` Q
+  FROM `etsy-data-warehouse-dev.ecanales.faiss_xwalk_experiment_uuids_sample_searches` Q
   CROSS JOIN `etsy-searchinfra-gke-prod-2.thrift_mmx_listingsv2search_search.rpc_logs_*` R
   WHERE DATE(R.queryTime) = Q._date
     AND R.request.options.searchPlacement = "wsg"
@@ -137,7 +137,7 @@ SELECT
     WHEN c.platform = "boe" AND mo_last <= 28*3 THEN 1
   ELSE 0 END AS top_3_flag
 FROM
-  `etsy-data-warehouse-dev.ecanales.vi_fbv2_multi_searchexplain_sample` a
+  `etsy-data-warehouse-dev.ecanales.faiss_xwalk_multi_searchexplain_sample` a
 JOIN
   `etsy-data-warehouse-prod.catapult.ab_tests` b
 ON a.visit_id = b.visit_id AND b.ab_test = config AND b._date IN UNNEST(_dates)
