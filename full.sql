@@ -5,7 +5,7 @@ DECLARE _platform STRING;
 SET config = 'ranking/search.mmx.2023_q3.axwalk_faisspp_boe';
 SET _dates = [DATE('2023-10-07'), DATE('2023-10-09'), DATE('2023-10-11')];
 -- 'wsg' if WEB experiment, 'allsr' if BOE experiment
-SET platform = "wsg";
+SET _platform = "wsg";
 
 CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.faiss_xwalk_experiment_uuids_sample` AS
 
