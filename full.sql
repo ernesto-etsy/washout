@@ -153,20 +153,36 @@ ab_variant,
 count(distinct visit_id) as visit_count,
 count(distinct request_uuid) as request_count,
 count(*) as listing_count,
---Solr (only)
-SUM(CASE WHEN (solr IS NOT NULL AND nir IS NULL AND xwalk IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_only_first_page_share,
---Solr <> NIR (no XWalk)
-SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_nir_first_page_share,
---Solr <> XWalk (no NIR)
-SUM(CASE WHEN (solr IS NOT NULL AND xwalk IS NOT NULL AND nir IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_xwalk_first_page_share,
---NIR (only)
-SUM(CASE WHEN (nir IS NOT NULL AND solr IS NULL AND xwalk IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS nir_only_first_page_share,
---NIR <> XWalk (no Solr)
-SUM(CASE WHEN (nir IS NOT NULL AND xwalk IS NOT NULL AND solr IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS nir_xwalk_first_page_share,
---XWalk (only)
-SUM(CASE WHEN (xwalk IS NOT NULL AND solr IS NULL AND nir IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS xwalk_only_first_page_share,
---Solr <> NIR <> XWalk
-SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS all_algos_first_page_share,
+--Solr
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NULL AND xwalk IS NULL AND xml IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_only_first_page_share,
+--NIR
+SUM(CASE WHEN (solr IS NULL AND nir IS NOT NULL AND xwalk IS NULL AND xml IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS nir_only_first_page_share,
+--XWalk
+SUM(CASE WHEN (solr IS NULL AND nir IS NULL AND xwalk IS NOT NULL AND xml IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS xwalk_only_first_page_share,
+--XML
+SUM(CASE WHEN (solr IS NULL AND nir IS NULL AND xwalk IS NULL AND xml IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS xml_only_first_page_share,
+--Solr and NIR
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NULL AND xml IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_nir_first_page_share,
+--Solr and XWalk
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NULL AND xwalk IS NOT NULL AND xml IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_xwalk_first_page_share,
+--Solr and XML
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NULL AND xwalk IS NULL AND xml IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_xml_first_page_share,
+--NIR and XWalk
+SUM(CASE WHEN (solr IS NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND xml IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS nir_xwalk_first_page_share,
+--NIR and XML
+SUM(CASE WHEN (solr IS NULL AND nir IS NOT NULL AND xwalk IS NULL AND xml IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS nir_xml_first_page_share,
+--XWalk and XML
+SUM(CASE WHEN (solr IS NULL AND nir IS NULL AND xwalk IS NOT NULL AND xml IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS xwalk_xml_first_page_share,
+--Solr, NIR and XWalk
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND xml IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_nir_xwalk_first_page_share,
+--Solr, NIR and XML
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NULL AND xml IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_nir_xml_first_page_share,
+--Solr, XWalk and XML
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NULL AND xwalk IS NOT NULL AND xml IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_xwalk_xml_first_page_share,
+--NIR, XWalk and XML
+SUM(CASE WHEN (solr IS NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND xml IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS nir_xwalk_xml_first_page_share,
+--Solr, NIR, XWalk and XML
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND xml IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_nir_xwalk_xml_first_page_share
 FROM temp_base
 GROUP BY 1
 ORDER BY 1;
@@ -177,20 +193,36 @@ ab_variant,
 count(distinct visit_id) as visit_count,
 count(distinct request_uuid) as request_count,
 count(*) as listing_count,
---Solr (only)
-SUM(CASE WHEN (solr IS NOT NULL AND nir IS NULL AND xwalk IS NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS solr_only_3p_share,
---Solr <> NIR (no XWalk)
-SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS solr_nir_3p_share,
---Solr <> XWalk (no NIR)
-SUM(CASE WHEN (solr IS NOT NULL AND xwalk IS NOT NULL AND nir IS NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS solr_xwalk_3p_share,
---NIR (only)
-SUM(CASE WHEN (nir IS NOT NULL AND solr IS NULL AND xwalk IS NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS nir_only_3p_share,
---NIR <> XWalk (no Solr)
-SUM(CASE WHEN (nir IS NOT NULL AND xwalk IS NOT NULL AND solr IS NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS nir_xwalk_3p_share,
---XWalk (only)
-SUM(CASE WHEN (xwalk IS NOT NULL AND solr IS NULL AND nir IS NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS xwalk_only_3p_share,
---Solr <> NIR <> XWalk
-SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS all_algos_3p_share,
+--Solr
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NULL AND xwalk IS NULL AND xml IS NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS solr_only_3p_share,
+--NIR
+SUM(CASE WHEN (solr IS NULL AND nir IS NOT NULL AND xwalk IS NULL AND xml IS NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS nir_only_3p_share,
+--XWalk
+SUM(CASE WHEN (solr IS NULL AND nir IS NULL AND xwalk IS NOT NULL AND xml IS NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS xwalk_only_3p_share,
+--XML
+SUM(CASE WHEN (solr IS NULL AND nir IS NULL AND xwalk IS NULL AND xml IS NOT NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS xml_only_3p_share,
+--Solr and NIR
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NULL AND xml IS NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS solr_nir_3p_share,
+--Solr and XWalk
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NULL AND xwalk IS NOT NULL AND xml IS NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS solr_xwalk_3p_share,
+--Solr and XML
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NULL AND xwalk IS NULL AND xml IS NOT NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS solr_xml_3p_share,
+--NIR and XWalk
+SUM(CASE WHEN (solr IS NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND xml IS NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS nir_xwalk_3p_share,
+--NIR and XML
+SUM(CASE WHEN (solr IS NULL AND nir IS NOT NULL AND xwalk IS NULL AND xml IS NOT NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS nir_xml_3p_share,
+--XWalk and XML
+SUM(CASE WHEN (solr IS NULL AND nir IS NULL AND xwalk IS NOT NULL AND xml IS NOT NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS xwalk_xml_3p_share,
+--Solr, NIR and XWalk
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND xml IS NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS solr_nir_xwalk_3p_share,
+--Solr, NIR and XML
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NULL AND xml IS NOT NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS solr_nir_xml_3p_share,
+--Solr, XWalk and XML
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NULL AND xwalk IS NOT NULL AND xml IS NOT NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS solr_xwalk_xml_3p_share,
+--NIR, XWalk and XML
+SUM(CASE WHEN (solr IS NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND xml IS NOT NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS nir_xwalk_xml_3p_share,
+--Solr, NIR, XWalk and XML
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND xml IS NOT NULL AND top_3_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN top_3_flag = 1 THEN 1 ELSE 0 END) AS solr_nir_xwalk_xml_3p_share
 FROM temp_base
 GROUP BY 1
 ORDER BY 1;
@@ -201,20 +233,36 @@ ab_variant,
 count(distinct visit_id) as visit_count,
 count(distinct request_uuid) as request_count,
 count(*) as listing_count,
---Solr (only)
-SUM(CASE WHEN (solr IS NOT NULL AND xwalk IS NULL AND nir IS NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS solr_only_1k_share,
---Solr <> NIR (no XWalk)
-SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS solr_nir_1k_share,
---Solr <> XWalk (no NIR)
-SUM(CASE WHEN (solr IS NOT NULL AND xwalk IS NOT NULL AND nir IS NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS solr_xwalk_1k_share,
---NIR (only)
-SUM(CASE WHEN (nir IS NOT NULL AND xwalk IS NULL AND solr IS NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS nir_only_1k_share,
---NIR <> XWalk (no Solr)
-SUM(CASE WHEN (nir IS NOT NULL AND xwalk IS NOT NULL AND solr IS NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS nir_xwalk_1k_share,
---XWalk (only)
-SUM(CASE WHEN (xwalk IS NOT NULL AND solr IS NULL AND nir IS NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS xwalk_only_1k_share,
---Solr <> NIR <> XWalk
-SUM(CASE WHEN (xwalk IS NOT NULL AND solr IS NOT NULL AND nir IS NOT NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS all_algos_1k_share,
+--Solr
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NULL AND xwalk IS NULL AND xml IS NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS solr_only_3p_share,
+--NIR
+SUM(CASE WHEN (solr IS NULL AND nir IS NOT NULL AND xwalk IS NULL AND xml IS NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS nir_only_3p_share,
+--XWalk
+SUM(CASE WHEN (solr IS NULL AND nir IS NULL AND xwalk IS NOT NULL AND xml IS NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS xwalk_only_3p_share,
+--XML
+SUM(CASE WHEN (solr IS NULL AND nir IS NULL AND xwalk IS NULL AND xml IS NOT NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS xml_only_3p_share,
+--Solr and NIR
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NULL AND xml IS NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS solr_nir_3p_share,
+--Solr and XWalk
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NULL AND xwalk IS NOT NULL AND xml IS NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS solr_xwalk_3p_share,
+--Solr and XML
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NULL AND xwalk IS NULL AND xml IS NOT NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS solr_xml_3p_share,
+--NIR and XWalk
+SUM(CASE WHEN (solr IS NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND xml IS NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS nir_xwalk_3p_share,
+--NIR and XML
+SUM(CASE WHEN (solr IS NULL AND nir IS NOT NULL AND xwalk IS NULL AND xml IS NOT NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS nir_xml_3p_share,
+--XWalk and XML
+SUM(CASE WHEN (solr IS NULL AND nir IS NULL AND xwalk IS NOT NULL AND xml IS NOT NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS xwalk_xml_3p_share,
+--Solr, NIR and XWalk
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND xml IS NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS solr_nir_xwalk_3p_share,
+--Solr, NIR and XML
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NULL AND xml IS NOT NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS solr_nir_xml_3p_share,
+--Solr, XWalk and XML
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NULL AND xwalk IS NOT NULL AND xml IS NOT NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS solr_xwalk_xml_3p_share,
+--NIR, XWalk and XML
+SUM(CASE WHEN (solr IS NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND xml IS NOT NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS nir_xwalk_xml_3p_share,
+--Solr, NIR, XWalk and XML
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND xml IS NOT NULL AND mo_last <= 1000) THEN 1 ELSE 0 END) / SUM(CASE WHEN mo_last <= 1000 THEN 1 ELSE 0 END) AS solr_nir_xwalk_xml_3p_share
 FROM temp_base
 GROUP BY 1
 ORDER BY 1;
@@ -226,20 +274,36 @@ _date,
 count(distinct visit_id) as visit_count,
 count(distinct request_uuid) as request_count,
 count(*) as listing_count,
---Solr (only)
-SUM(CASE WHEN (solr IS NOT NULL AND nir IS NULL AND xwalk IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_only_first_page_share,
---Solr <> NIR (no XWalk)
-SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_nir_first_page_share,
---Solr <> XWalk (no NIR)
-SUM(CASE WHEN (solr IS NOT NULL AND xwalk IS NOT NULL AND nir IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_xwalk_first_page_share,
---NIR (only)
-SUM(CASE WHEN (nir IS NOT NULL AND solr IS NULL AND xwalk IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS nir_only_first_page_share,
---NIR <> XWalk (no Solr)
-SUM(CASE WHEN (nir IS NOT NULL AND xwalk IS NOT NULL AND solr IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS nir_xwalk_first_page_share,
---XWalk (only)
-SUM(CASE WHEN (xwalk IS NOT NULL AND solr IS NULL AND nir IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS xwalk_only_first_page_share,
---Solr <> NIR <> XWalk
-SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS all_algos_first_page_share,
+--Solr
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NULL AND xwalk IS NULL AND xml IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_only_first_page_share,
+--NIR
+SUM(CASE WHEN (solr IS NULL AND nir IS NOT NULL AND xwalk IS NULL AND xml IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS nir_only_first_page_share,
+--XWalk
+SUM(CASE WHEN (solr IS NULL AND nir IS NULL AND xwalk IS NOT NULL AND xml IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS xwalk_only_first_page_share,
+--XML
+SUM(CASE WHEN (solr IS NULL AND nir IS NULL AND xwalk IS NULL AND xml IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS xml_only_first_page_share,
+--Solr and NIR
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NULL AND xml IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_nir_first_page_share,
+--Solr and XWalk
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NULL AND xwalk IS NOT NULL AND xml IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_xwalk_first_page_share,
+--Solr and XML
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NULL AND xwalk IS NULL AND xml IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_xml_first_page_share,
+--NIR and XWalk
+SUM(CASE WHEN (solr IS NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND xml IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS nir_xwalk_first_page_share,
+--NIR and XML
+SUM(CASE WHEN (solr IS NULL AND nir IS NOT NULL AND xwalk IS NULL AND xml IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS nir_xml_first_page_share,
+--XWalk and XML
+SUM(CASE WHEN (solr IS NULL AND nir IS NULL AND xwalk IS NOT NULL AND xml IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS xwalk_xml_first_page_share,
+--Solr, NIR and XWalk
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND xml IS NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_nir_xwalk_first_page_share,
+--Solr, NIR and XML
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NULL AND xml IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_nir_xml_first_page_share,
+--Solr, XWalk and XML
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NULL AND xwalk IS NOT NULL AND xml IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_xwalk_xml_first_page_share,
+--NIR, XWalk and XML
+SUM(CASE WHEN (solr IS NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND xml IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS nir_xwalk_xml_first_page_share,
+--Solr, NIR, XWalk and XML
+SUM(CASE WHEN (solr IS NOT NULL AND nir IS NOT NULL AND xwalk IS NOT NULL AND xml IS NOT NULL AND page_1_flag = 1) THEN 1 ELSE 0 END) / SUM(CASE WHEN page_1_flag = 1 THEN 1 ELSE 0 END) AS solr_nir_xwalk_xml_first_page_share
 FROM temp_base
 GROUP BY 1,2
 ORDER BY 2,1;
