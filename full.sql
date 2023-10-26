@@ -133,8 +133,6 @@ SET config = 'ranking/search.mmx.2023_q3.axwalk_faisspp_boe';
 SET _dates = [DATE('2023-10-07'), DATE('2023-10-09'), DATE('2023-10-11')];
 SET _algos = ["SOLR","NIR","XWALK","XML"];
 
--------------PART 4: CALCULATE KEY RETRIEVAL WASHOUT METRICS FROM SAMPLE-------------
--- Create temporary table
 CREATE TEMP TABLE temp_base AS
 SELECT
   a.*,
