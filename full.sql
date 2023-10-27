@@ -22,6 +22,7 @@ WHERE
   AND properties.key = "request_uuid"
   AND ab.key = config
   AND ab.value.value_tuple[OFFSET(0)] <> 'ineligible'
+  AND b.event_name = 'search'
 GROUP BY
   request_uuid, ab_flag, ab_flag_variant
 ORDER BY
