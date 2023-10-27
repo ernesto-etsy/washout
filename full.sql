@@ -9,7 +9,7 @@ SET _platform = "allsr";
 
 CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.blendedrank_boe_experiment_uuids_sample` AS
 
-SELECT
+SELECT DISTINCT
   properties.value AS request_uuid,
   ab.key AS ab_flag,
   ab.value.value_tuple[OFFSET(0)] AS ab_flag_variant,
