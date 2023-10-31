@@ -83,13 +83,13 @@ metadata AS (
   WHERE C.interleavedBehavior IS NULL
 ),
 solr    AS (SELECT _date, request_uuid, ab_flag, visit_id, query, listing_id, ROW_NUMBER() OVER (PARTITION BY request_uuid) AS rank FROM metadata M CROSS JOIN UNNEST(listingIds) AS listing_id WHERE M.stage = "POST_FILTER" AND M.source = "SOLR" ),
-nir     AS (SELECT _date, request_uuid, ab_flag, visit_id, query, listing_id, ROW_NUMBER() OVER (PARTITION BY query) AS rank FROM metadata M CROSS JOIN UNNEST(listingIds) AS listing_id WHERE M.stage = "POST_FILTER" AND M.source = "ANN"  ),
-xwalk   AS (SELECT _date, request_uuid, ab_flag, visit_id, query, listing_id, ROW_NUMBER() OVER (PARTITION BY query) AS rank FROM metadata M CROSS JOIN UNNEST(listingIds) AS listing_id WHERE M.stage = "POST_FILTER" AND M.source = "XWALK"),
-xml     AS (SELECT _date, request_uuid, ab_flag, visit_id, query, listing_id, ROW_NUMBER() OVER (PARTITION BY query) AS rank FROM metadata M CROSS JOIN UNNEST(listingIds) AS listing_id WHERE M.stage = "POST_FILTER" AND M.source = "XML"  ),
-borda   AS (SELECT _date, request_uuid, ab_flag, visit_id, query, listing_id, ROW_NUMBER() OVER (PARTITION BY query) AS rank FROM metadata M CROSS JOIN UNNEST(listingIds) AS listing_id WHERE M.stage = "POST_BORDA"  AND M.source IS NULL  ),
-ranking AS (SELECT _date, request_uuid, ab_flag, visit_id, query, listing_id, ROW_NUMBER() OVER (PARTITION BY query) AS rank FROM metadata M CROSS JOIN UNNEST(listingIds) AS listing_id WHERE M.stage = "RANKING"     AND M.source IS NULL  ),
-mo_list AS (SELECT _date, request_uuid, ab_flag, visit_id, query, listing_id, ROW_NUMBER() OVER (PARTITION BY query) AS rank FROM metadata M CROSS JOIN UNNEST(listingIds) AS listing_id WHERE M.stage = "MO_LISTWISE" AND M.source IS NULL  ),
-mo_last AS (SELECT _date, request_uuid, ab_flag, visit_id, query, listing_id, ROW_NUMBER() OVER (PARTITION BY query) AS rank FROM metadata M CROSS JOIN UNNEST(listingIds) AS listing_id WHERE M.stage = "MO_LASTPASS" AND M.source IS NULL  )
+nir     AS (SELECT _date, request_uuid, ab_flag, visit_id, query, listing_id, ROW_NUMBER() OVER (PARTITION BY request_uuid) AS rank FROM metadata M CROSS JOIN UNNEST(listingIds) AS listing_id WHERE M.stage = "POST_FILTER" AND M.source = "ANN"  ),
+xwalk   AS (SELECT _date, request_uuid, ab_flag, visit_id, query, listing_id, ROW_NUMBER() OVER (PARTITION BY request_uuid) AS rank FROM metadata M CROSS JOIN UNNEST(listingIds) AS listing_id WHERE M.stage = "POST_FILTER" AND M.source = "XWALK"),
+xml     AS (SELECT _date, request_uuid, ab_flag, visit_id, query, listing_id, ROW_NUMBER() OVER (PARTITION BY request_uuid) AS rank FROM metadata M CROSS JOIN UNNEST(listingIds) AS listing_id WHERE M.stage = "POST_FILTER" AND M.source = "XML"  ),
+borda   AS (SELECT _date, request_uuid, ab_flag, visit_id, query, listing_id, ROW_NUMBER() OVER (PARTITION BY request_uuid) AS rank FROM metadata M CROSS JOIN UNNEST(listingIds) AS listing_id WHERE M.stage = "POST_BORDA"  AND M.source IS NULL  ),
+ranking AS (SELECT _date, request_uuid, ab_flag, visit_id, query, listing_id, ROW_NUMBER() OVER (PARTITION BY request_uuid) AS rank FROM metadata M CROSS JOIN UNNEST(listingIds) AS listing_id WHERE M.stage = "RANKING"     AND M.source IS NULL  ),
+mo_list AS (SELECT _date, request_uuid, ab_flag, visit_id, query, listing_id, ROW_NUMBER() OVER (PARTITION BY request_uuid) AS rank FROM metadata M CROSS JOIN UNNEST(listingIds) AS listing_id WHERE M.stage = "MO_LISTWISE" AND M.source IS NULL  ),
+mo_last AS (SELECT _date, request_uuid, ab_flag, visit_id, query, listing_id, ROW_NUMBER() OVER (PARTITION BY request_uuid) AS rank FROM metadata M CROSS JOIN UNNEST(listingIds) AS listing_id WHERE M.stage = "MO_LASTPASS" AND M.source IS NULL  )
 
 SELECT
   mo_last._date,
