@@ -2,12 +2,12 @@ DECLARE _dates ARRAY<DATE>;
 DECLARE config STRING;
 DECLARE _platform STRING;
 
-SET config = 'ranking/search.mmx.2023_q3.nrv2_blended_rank_feature_boe';
-SET _dates = [DATE('2023-09-29'), DATE('2023-10-02'), DATE('2023-10-04')];
+SET config = 'ranking/search.mmx.2023_q3.nrv2_blended_rank_feature_web';
+SET _dates = [DATE('2023-09-19'), DATE('2023-09-24'), DATE('2023-09-28')];
 -- 'wsg' if WEB experiment, 'allsr' if BOE experiment
-SET _platform = "allsr";
+SET _platform = "wsg";
 
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.blendedrank_boe_experiment_uuids_sample` AS
+CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.blendedrank_web_experiment_uuids_sample` AS
 
 SELECT DISTINCT
   properties.value AS request_uuid,
@@ -31,7 +31,7 @@ LIMIT 3000000;
 
 -------------PART 2: PULL ALL ASSOCIATED VISIT IDS AND SEARCH QUERIES FROM EXPERIMENT SAMPLE-------------
 
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.blendedrank_boe_experiment_uuids_sample_searches` AS
+CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.blendedrank_web_experiment_uuids_sample_searches` AS
 
 with events as (
   select
@@ -48,22 +48,32 @@ where beacon.event_name = 'search'
 and DATE(_PARTITIONTIME) IN UNNEST(_dates)
 )
 SELECT e._date,s.request_uuid,s.ab_flag,e.visit_id,e.query
-FROM `etsy-data-warehouse-dev.ecanales.blendedrank_boe_experiment_uuids_sample` s
+FROM `etsy-data-warehouse-dev.ecanales.blendedrank_web_experiment_uuids_sample` s
   JOIN events e on e.request_uuid = s.request_uuid
 WHERE e.query IS NOT NULL;
 
 -------------PART 3: PULL FROM RPC LOGS-------------
 
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.blendedrank_boe_multi_searchexplain_sample` AS
-WITH requests AS (
+CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.blendedrank_web_multi_searchexplain_sample` AS
+WITH rpc_base AS
+(SELECT
+OrganicRequestMetadata.candidateSources, 
+RequestIdentifiers,
+request
+FROM `etsy-searchinfra-gke-prod-2.thrift_mmx_listingsv2search_search.rpc_logs_*`
+WHERE DATE(queryTime) IN UNNEST(_dates)
+AND request.options.searchPlacement = _platform
+AND request.sortBy = 'relevance'
+AND request.sortOrder = 'desc'
+),
+requests AS (
 SELECT 
     Q.*,
-    R.OrganicRequestMetadata.candidateSources, 
+    R.candidateSources, 
     R.RequestIdentifiers
-  FROM `etsy-data-warehouse-dev.ecanales.blendedrank_boe_experiment_uuids_sample_searches` Q
-  CROSS JOIN `etsy-searchinfra-gke-prod-2.thrift_mmx_listingsv2search_search.rpc_logs_*` R
-  WHERE DATE(R.queryTime) = Q._date
-    AND R.request.options.searchPlacement = _platform
+  FROM `etsy-data-warehouse-dev.ecanales.blendedrank_web_experiment_uuids_sample_searches` Q
+  CROSS JOIN rpc_base R
+  WHERE request.options.searchPlacement = _platform
     AND RequestIdentifiers.etsyRequestUUID = Q.request_uuid
     AND request.sortBy = 'relevance'
     AND request.sortOrder = 'desc'
@@ -141,14 +151,14 @@ SELECT
     WHEN c.platform = "boe" AND mo_last <= 28*3 THEN 1
   ELSE 0 END AS top_3_flag
 FROM
-  `etsy-data-warehouse-dev.ecanales.blendedrank_boe_multi_searchexplain_sample` a
+  `etsy-data-warehouse-dev.ecanales.blendedrank_web_multi_searchexplain_sample` a
 JOIN
   `etsy-data-warehouse-prod.catapult.ab_tests` b
 ON a.visit_id = b.visit_id AND b.ab_test = config AND b._date IN UNNEST(_dates)
 JOIN
   `etsy-data-warehouse-prod.weblog.recent_visits` c
 ON b.visit_id = c.visit_id AND c._date IN UNNEST(_dates);
-CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.blendedrank_boe_searchexplain_metrics` AS
+CREATE OR REPLACE TABLE `etsy-data-warehouse-dev.ecanales.blendedrank_web_searchexplain_metrics` AS
 WITH first_page AS (
 --KEY METRIC: FIRST PAGE SHARE OVERALL
 SELECT
